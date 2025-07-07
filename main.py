@@ -1,8 +1,11 @@
 from dotenv import load_dotenv
+from VersaLog import *
 import urllib.request
 import tweepy
 import os
 import time
+
+logger = VersaLog(mode="detailed", show_file=False)
 
 load_dotenv()
 
@@ -28,12 +31,12 @@ def main(uid):
                 pagination_token=pagination_token
             )
         except tweepy.errors.TooManyRequests as e:
-            print("Rate limit reached. Waiting before retrying...")
+            logger.error("Rate limit reached. Waiting before retrying...")
             time.sleep(15 * 60)  # Wait for 15 minutes
             continue
 
         if not tweets.data:
-            print("Completed retrieving all tweets.")
+            logger.info("Completed retrieving all tweets.")
             break
 
         media_dict = {m.media_key: m.url for m in tweets.includes["media"]} if "media" in tweets.includes else {}
@@ -46,7 +49,7 @@ def main(uid):
                         total_images += 1
 
         tweet_count += len(tweets.data)
-        print(f"Processed {tweet_count} tweets, saved {total_images} images.")
+        logger.info(f"Processed {tweet_count} tweets, saved {total_images} images.")
 
         pagination_token = tweets.meta.get("next_token")
         if not pagination_token:
@@ -60,9 +63,9 @@ def Save(url):
         req = urllib.request.urlopen(ourl)
         with open(path, "wb") as f:
             f.write(req.read())
-        print(f"Image saved successfully: {path}")
+        logger.info(f"Image saved successfully: {path}")
     except Exception as e:
-        print(f"Save error: {e}")
+        logger.error(f"Save error: {e}")
 
 if __name__ == "__main__":
     if not os.path.exists(IMG_PATH):
@@ -73,7 +76,7 @@ if __name__ == "__main__":
         user_data = client.get_user(username=username)
         uid = user_data.data.id
     except Exception as e:
-        print(f"Error retrieving user information: {e}")
+        logger.error(f"Error retrieving user information: {e}")
         exit()
 
     main(uid)
